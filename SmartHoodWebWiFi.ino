@@ -9,12 +9,11 @@
 #include <SimpleTimer.h>
 #include <DHT.h>
 #include <BlynkSimpleEsp8266.h>
+#include <EEPROM.h>
 
 
-
-char blynk_token[34] = "89a3a113efdd4b5ab70fecb275b28637";
 bool shouldSaveConfig = false;//флаг для сохранения данных
-
+char blynk_token[34] = "";
 
 SimpleTimer timer;
 
@@ -67,8 +66,7 @@ void setup()
         JsonObject& json = jsonBuffer.parseObject(buf.get());
         json.printTo(Serial);
         if (json.success()) {
-          Serial.println("\nparsed json");
-
+          Serial.println("\nparsed json");          
           strcpy(blynk_token, json["blynk_token"]);
 
         } else {
@@ -87,7 +85,7 @@ void setup()
 
   WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 33);//was 32 length
   
-  Serial.println(blynk_token);
+  
 
 //WiFiManager
 //Локальная инициализация. Как только его бизнес закончен, нет необходимости держать его вокруг
@@ -101,6 +99,16 @@ void setup()
   
   wifiManager.addParameter(&custom_blynk_token);//добавьте все свои параметры здесь
 
+//проверяем, сохранились ли настройки токена от блинка, если нет, то очищаем также настройки подключения к wifi
+  strcpy(blynk_token, custom_blynk_token.getValue());//прочтем обновленные параметры
+  String S = blynk_token;
+   
+    if (S.length() == 0)
+    {
+      wifiManager.resetSettings();      
+    }
+
+
 //wifiManager.resetSettings ();//сброс настроек - для тестирования
 
 //устанавливаем минимальное качество сигнала, чтобы он игнорировал точки доступа под этим качеством
@@ -109,7 +117,7 @@ void setup()
 //  wifiManager.setTimeout(600);//10 минут для ввода данных, а затем ESP сбрасывает, чтобы повторить попытку.
 
 //выбирает ssid и pass и пытается подключиться, если он не подключается, запускает точку доступа с указанным именем и переходит в цикл блокировки в ожидании конфигурации
-  
+      
     if (!wifiManager.autoConnect("SmartHood", "12345678")) {//Задайте здесь параметры точки доступа (SSID, password)
     Serial.println("Не удалось подключиться и истекло время ожидания");
     delay(3000);//перезагрузите и попробуйте снова, или, возможно, положить его в глубокий сон
@@ -152,7 +160,7 @@ void setup()
   }
   else
   {
-	  Serial.println("Нет соединения с WiFi"); 
+    Serial.println("Нет соединения с WiFi"); 
   }
     
   
